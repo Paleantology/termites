@@ -1,0 +1,156 @@
+NUM_INTERVALS = 100
+NUM_BREAKS := NUM_INTERVALS - 1
+interval_times <- abs(160 * seq(1, NUM_BREAKS, 1)/NUM_INTERVALS)
+
+# The FBD is conditioned on a starting time for the process, which is the origin time #
+# Specify a uniform prior on the origin #
+origin_time ~ dnUnif(125.0, 190.0)
+
+# Specify a sliding-window move on the origin_time parameter #
+# This move will be applied with 3 different window widths (delta) to help improve mixing #
+moves.append( mvSlide(origin_time, delta=0.01, weight=5.0) )
+moves.append( mvSlide(origin_time, delta=0.1,  weight=5.0) )
+moves.append( mvSlide(origin_time, delta=1,    weight=5.0) )
+
+speciation_rate_global_scale_hyperprior <- 0.0021
+extinction_rate_global_scale_hyperprior <- 0.0021
+fossilization_rate_global_scale_hyperprior <- 0.0021
+
+speciation_rate_global_scale ~ dnHalfCauchy(0,1)
+extinction_rate_global_scale ~ dnHalfCauchy(0,1)
+fossilization_rate_global_scale ~ dnHalfCauchy(0,1)
+
+speciation_rate_hyperprior_alpha <- 8.333449
+speciation_rate_hyperprior_beta <- 24.432402
+extinction_rate_hyperprior_alpha <- 8.28311
+extinction_rate_hyperprior_beta <- 24.34245
+fossilization_rate_hyperprior_alpha <- 8.964942
+fossilization_rate_hyperprior_beta <- 2717.621689
+
+speciation_rate_at_present ~ dnGamma(speciation_rate_hyperprior_alpha,speciation_rate_hyperprior_beta)
+extinction_rate_at_present ~ dnGamma(extinction_rate_hyperprior_alpha,extinction_rate_hyperprior_beta)
+fossilization_rate_at_present ~ dnGamma(fossilization_rate_hyperprior_alpha,fossilization_rate_hyperprior_beta)
+
+moves.append( mvScaleBactrian(speciation_rate_at_present,weight=5) )
+moves.append( mvScaleBactrian(extinction_rate_at_present,weight=5) )
+moves.append( mvScaleBactrian(fossilization_rate_at_present,weight=5) )
+moves.append( mvMirrorMultiplier(speciation_rate_at_present,weight=5) )
+moves.append( mvMirrorMultiplier(extinction_rate_at_present,weight=5) )
+moves.append( mvMirrorMultiplier(fossilization_rate_at_present,weight=5) )
+moves.append( mvRandomDive(speciation_rate_at_present,weight=5) )
+moves.append( mvRandomDive(extinction_rate_at_present,weight=5) )
+moves.append( mvRandomDive(fossilization_rate_at_present,weight=5) )
+
+avmvn_rates_at_present = mvAVMVN(weight=50)
+avmvn_rates_at_present.addVariable(speciation_rate_at_present)
+avmvn_rates_at_present.addVariable(extinction_rate_at_present)
+avmvn_rates_at_present.addVariable(fossilization_rate_at_present)
+moves.append( avmvn_rates_at_present )
+
+up_down_move = mvUpDownScale(weight=5.0)
+up_down_move.addVariable(speciation_rate_at_present,TRUE)
+up_down_move.addVariable(extinction_rate_at_present,TRUE)
+moves.append( up_down_move )
+
+for (i in 1:NUM_BREAKS) {
+  # Variable-scaled variances for hierarchical horseshoe
+  sigma_speciation_rate[i] ~ dnHalfCauchy(0,1)
+  sigma_extinction_rate[i] ~ dnHalfCauchy(0,1)
+  sigma_fossilization_rate[i] ~ dnHalfCauchy(0,1)
+
+  # Make sure values initialize to something reasonable
+  sigma_speciation_rate[i].setValue(runif(1,0.005,0.1)[1])
+  sigma_extinction_rate[i].setValue(runif(1,0.005,0.1)[1])
+  sigma_fossilization_rate[i].setValue(runif(1,0.005,0.1)[1])
+
+  # moves on the single sigma values
+  moves.append( mvScaleBactrian(sigma_speciation_rate[i], weight=5) )
+  moves.append( mvScaleBactrian(sigma_extinction_rate[i], weight=5) )
+  moves.append( mvScaleBactrian(sigma_fossilization_rate[i], weight=5) )
+
+  # non-centralized parameterization of horseshoe
+  delta_log_speciation_rate[i] ~ dnNormal( mean=0, sd=sigma_speciation_rate[i]*speciation_rate_global_scale*speciation_rate_global_scale_hyperprior )
+  delta_log_extinction_rate[i] ~ dnNormal( mean=0, sd=sigma_extinction_rate[i]*extinction_rate_global_scale*extinction_rate_global_scale_hyperprior )
+  delta_log_fossilization_rate[i] ~ dnNormal( mean=0, sd=sigma_fossilization_rate[i]*fossilization_rate_global_scale*fossilization_rate_global_scale_hyperprior )
+
+  # Make sure values initialize to something reasonable
+  delta_log_speciation_rate[i].setValue(runif(1,-0.1,0.1)[1])
+  delta_log_extinction_rate[i].setValue(runif(1,-0.1,0.1)[1])
+  delta_log_fossilization_rate[i].setValue(runif(1,-0.1,0.1)[1])
+
+  moves.append( mvSlideBactrian(delta_log_speciation_rate[i], weight=5) )
+  moves.append( mvSlideBactrian(delta_log_extinction_rate[i], weight=5) )
+  moves.append( mvSlideBactrian(delta_log_fossilization_rate[i], weight=5) )
+
+  delta_up_down_move[i] = mvUpDownSlide(weight=5.0)
+  delta_up_down_move[i].addVariable(delta_log_speciation_rate[i],TRUE)
+  delta_up_down_move[i].addVariable(delta_log_extinction_rate[i],TRUE)
+  moves.append( delta_up_down_move[i] )
+}
+
+speciation_rate := fnassembleContinuousMRF(speciation_rate_at_present,delta_log_speciation_rate,initialValueIsLogScale=FALSE,order=1)
+extinction_rate := fnassembleContinuousMRF(extinction_rate_at_present,delta_log_extinction_rate,initialValueIsLogScale=FALSE,order=1)
+fossilization_rate := fnassembleContinuousMRF(fossilization_rate_at_present,delta_log_fossilization_rate,initialValueIsLogScale=FALSE,order=1)
+
+# Move all field parameters in one go
+moves.append( mvEllipticalSliceSamplingSimple(delta_log_speciation_rate,weight=5,tune=FALSE) )
+moves.append( mvEllipticalSliceSamplingSimple(delta_log_extinction_rate,weight=5,tune=FALSE) )
+moves.append( mvEllipticalSliceSamplingSimple(delta_log_fossilization_rate,weight=5,tune=FALSE) )
+
+# Move all field hyperparameters in one go
+moves.append( mvHSRFHyperpriorsGibbs(speciation_rate_global_scale, sigma_speciation_rate , delta_log_speciation_rate , speciation_rate_global_scale_hyperprior,  weight=10) )
+moves.append( mvHSRFHyperpriorsGibbs(extinction_rate_global_scale, sigma_extinction_rate , delta_log_extinction_rate , extinction_rate_global_scale_hyperprior,  weight=10) )
+moves.append( mvHSRFHyperpriorsGibbs(fossilization_rate_global_scale, sigma_fossilization_rate , delta_log_fossilization_rate , fossilization_rate_global_scale_hyperprior,  weight=10) )
+
+# Swap moves to exchange adjacent delta,sigma pairs
+moves.append( mvHSRFIntervalSwap(delta_log_speciation_rate ,sigma_speciation_rate ,weight=5) )
+moves.append( mvHSRFIntervalSwap(delta_log_extinction_rate ,sigma_extinction_rate ,weight=5) )
+moves.append( mvHSRFIntervalSwap(delta_log_fossilization_rate ,sigma_fossilization_rate ,weight=5) )
+
+rho <- .05
+
+fbd_tree ~ dnFBDP(rootAge                                          = origin_time,
+                  timeline                                         = interval_times,
+                  lambda                                           = speciation_rate,
+                  mu                                               = extinction_rate,
+                  psi                                              = fossilization_rate,
+                  rho                                              = rho,
+                  condition                                        = "sampling",
+                  taxa                                             = taxa)
+
+
+  #                clade_cryptotermes = clade("Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_glaesarius",
+  #                                      "Cryptotermes_yamini")
+  #                constraints = v(clade_cryptotermes)
+  #                fbd_tree ~ dnConstrainedTopology(fbd_dist, constraints=constraints)
+
+                       moves.append(mvFNPR(fbd_tree, weight=15.0))
+
+                       moves.append(mvCollapseExpandFossilBranch(fbd_tree, origin_time, weight=6.0))
+
+                       moves.append(mvNodeTimeSlideUniform(fbd_tree, weight=40.0))
+
+                       moves.append(mvRootTimeSlideUniform(fbd_tree, origin_time, weight=5.0))
+                       # Setup the fossil tip sampling #
+
+                       # Use a for loop to create a uniform distribution on the occurence time for each fossil #
+
+                       # The boundaries of the uniform distribution are specified in the tsv file #
+
+                       fossils = fbd_tree.getFossils()
+                       for(i in 1:fossils.size())
+                       {
+                           t[i] := tmrca(fbd_tree, clade(fossils[i]))
+
+                           a_i = fossils[i].getMinAge()
+                           b_i = fossils[i].getMaxAge()
+
+                           F[i] ~ dnUniform(t[i] - b_i, t[i] - a_i)
+                           F[i].clamp( 0 )
+                       }
+
+                       # Add a move to sample the fossil times #
+                       moves.append( mvFossilTimeSlideUniform(fbd_tree, origin_time, weight=5.0) )
+
+
+                       num_samp_anc := fbd_tree.numSampledAncestors()

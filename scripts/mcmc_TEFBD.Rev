@@ -38,7 +38,8 @@ monitors = VectorMonitors()
 n_taxa <- taxa.size()
 n_branches <- 2 * n_taxa - 2
 # Load the model files
-source("scripts/FBD.Rev") # FBD tree prior
+#source("scripts/FBD.Rev") # FBD tree prior
+source("scripts/RJ_model_FBDP.Rev")
 #source("scripts/model_UExp.Rev") # UExp relaxed clock
 
 #source("scripts/model_GTRG.Rev") # Molecular substitution model (GTR+G)
@@ -51,7 +52,7 @@ source("scripts/model_Morph.Rev") # Morphological character change model
 ########
 
 # initialize the model object #
-mymodel = model(psi)
+mymodel = model(fbd_tree)
 # Create a vector of monitors #
 # 1. for the full model #
 monitors.append(mnModel(filename="output/terms.log", printgen=10))
