@@ -2,34 +2,43 @@
 # GTR+G nucleotide substitution model #
 #####################################
 
-# Initialize the parameters of substitution matrix #
-# Both the stationary frequencies and exchangeability rates #
-# are drawn from uniform Dirichlet distributions #
+for (i in 1:n_data_subsets) {
 
-# First the stationary frequencies #
-sf_hp <- v(1,1,1,1)
-sf ~ dnDirichlet(sf_hp)
+    # exchangeability rates for partition i
+    er_prior[i] <- v(1,1,1,1,1,1)
+    er[i] ~ dnDirichlet(er_prior[i])
+    moves.append(mvSimplexElementScale(er[i], alpha=10, tune=true, weight=3))
 
-# Then the exchangeability rates #
-er_hp <- v(1,1,1,1,1,1)
-er ~ dnDirichlet(er_hp)
+    # stationary frequencies for partition i
+    pi_prior[i] <- v(1,1,1,1)
+    pi[i] ~ dnDirichlet(pi_prior[i])
+    moves.append(mvSimplexElementScale(pi[i], alpha=10, tune=true, weight=2) )
 
-moves.append( mvSimplexElementScale(er, alpha=10.0, weight=5.0) )
-moves.append( mvSimplexElementScale(sf, alpha=10.0, weight=5.0) )
+    # rate matrix for partition i
+    Q[i] := fnGTR(er[i],pi[i])
 
-# Create the matrix #
-Q_cytb := fnGTR(er,sf)
+    # +Gamma for partition i
+    alpha_prior_mean[i] <- 5.0
+    alpha_prior_sd[i] <- 0.587405
+    alpha[i] ~ dnLognormal( alpha_prior_mean[i], alpha_prior_sd[i] )
+    gamma_rates[i] := fnDiscretizeGamma( alpha[i], alpha[i], 4, false )
 
-# Create a discretized gamma distribution of rate categories  #
-# the shape parameter is drawn from an exponential prior #
-alpha_cytb ~ dnExponential( 1.0 )
+    # add moves for the alpha parameter
+    moves.append(mvScale(alpha[i],weight=2))
 
-moves.append( mvScale(alpha_cytb, lambda=0.01, weight=1.0) )
-moves.append( mvScale(alpha_cytb, lambda=0.1,  weight=1.0) )
-moves.append( mvScale(alpha_cytb, lambda=1,    weight=1.0) )
+    # the probability of a site being invariable
+    pinvar[i] ~ dnBeta(1,1)
+    moves.append(mvScale(pinvar[i], lambda=0.1, tune=true, weight=2.0))
+    moves.append(mvSlide(pinvar[i], delta=0.1, tune=true, weight=2.0))
 
-rates_cytb := fnDiscretizeGamma( alpha_cytb, alpha_cytb, 4 )
+}
 
-### Create the substitution model and clamp with our observed DNA data ###
-phySeq ~ dnPhyloCTMC(tree=fbd_tree, Q=Q_cytb, siteRates=rates_cytb, branchRates=branch_rates, type="DNA")
-phySeq.clamp(cytb)
+###################
+# PhyloCTMC Model #
+###################
+
+# the sequence evolution model
+for (i in 1:n_data_subsets) {
+    phyloSeq[i] ~ dnPhyloCTMC(tree=fbd_tree, Q=Q[i], siteRates=gamma_rates[i], branchRates = branch_rates, pInv=pinvar[i], type="DNA")
+    phyloSeq[i].clamp(data[i])
+}
