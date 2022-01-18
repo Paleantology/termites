@@ -1,0 +1,22 @@
+q()
+fossils[i]
+fossils[i][1
+]
+q()
+?dnConstrainedTo
+?dnConstrainedTopology
+## helpers
+moves = VectorMoves()
+monitors = VectorMonitors()
+n_taxa <- taxa.size()
+?dnCDBDP
+q()
+?dnCDBDP
+q()
+?dnCDBDP
+q()
+?dnCBDBP
+?dnCDBDP
+q()
+
+q()

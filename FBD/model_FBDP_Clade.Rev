@@ -4,7 +4,7 @@
 
 # The FBD is conditioned on a starting time for the process, which is the origin time #
 # Specify a uniform prior on the origin #
-origin_time ~ dnUnif(125.0, 190.0)
+origin_time ~ dnUnif(80.0, 120.0)
 
 # Specify a sliding-window move on the origin_time parameter #
 # This move will be applied with 3 different window widths (delta) to help improve mixing #
@@ -63,7 +63,7 @@ rate_cat_probs <- simplex( rep(1, NUM_RATE_CATEGORIES) )
 ### and we have sampled 367
 rho <- taxa.size() / NUM_TOTAL_SPECIES
 
-observed_phylogeny <- readTrees("../data/termites.tre")[1]
+#observed_phylogeny <- readTrees("../data/termites.tre")[1]
 
 
 #### construct a variable for the tree drawn from a birth death process
@@ -72,20 +72,21 @@ timetree ~ dnCDBDP( rootAge           = origin_time,
                     extinctionRates   = extinction,
                     psi               = fossilization,
                     Q                 = fnJC(NUM_RATE_CATEGORIES),
+                    simulateCondition = "numTips",
                     delta             = event_rate,
                     pi                = rate_cat_probs,
                     rho               = rho,
-                    condition         = "time" )
-
-timetree.setValue(observed_phylogeny)
+                    condition         = "survival" )
+s_t <- simStartingTree(taxa)
+timetree.setValue(s_t)
 
 ### clamp the model with the "observed" tree
-# The will be a random variable of a constrained topology distribution that is governed by the FBD #
+# The will be a, random variable of a constrained topology distribution that is governed by the FBD #
 # this distribution will generate FBD trees that match the monophyly constraints defined above #
 #clade_cryptotermes = clade("Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_glaesarius",
-#                      "Cryptotermes_yamini")
+#                      "Cryptotermes_yamini"),
 #constraints = v(clade_cryptotermes)
-#timetree ~ dnConstrainedTopology(fbd_dist, constraints=constraints)
+#timetree ~ dnConstrainedTopology(timetree, constraints=constraints)
 
 moves.append(mvFNPR(timetree, weight=15.0))
 
@@ -101,22 +102,22 @@ moves.append(mvRootTimeSlideUniform(timetree, origin_time, weight=5.0))
 
  # The boundaries of the uniform distribution are specified in the tsv file #
 
- fossils = timetree.getFossils()
+ fossils =readDataDelimitedFile(file="../data/taxa.tsv", header=true)
+
+ fossils.size()
  for(i in 1:fossils.size())
  {
      fossils
-     t[i] := tmrca(timetree, clade(fossils[i]))
+     t[i] := tmrca(timetree, clade(fossils[i][1]))
 
-     a_i = fossils[i].getMinAge()
-     a_i
-     b_i = fossils[i].getMaxAge()
-
-     F[i] ~ dnUniform(t[i] - b_i, t[i] - a_i)
-     F[i].clamp( 0 )
+     a_i = fossils[i][2]
+     b_i = fossils[i][3]
+     F[i] ~ dnUniform(b_i, a_i)
+    F[i].clamp( 0 )
  }
 
  # Add a move to sample the fossil times #
-moves.append( mvFossilTimeSlideUniform(timetree, origin_time, weight=5.0) )
+#moves.append( mvFossilTimeSlideUniform(timetree, origin_time, weight=5.0) )
 
 
 num_samp_anc := timetree.numSampledAncestors()
