@@ -1,0 +1,9 @@
+q()
+help(dnCDBDP)
+?dnCDBDP
+q()
+fbd_dist
+?sim
+q()
+[A
+q()

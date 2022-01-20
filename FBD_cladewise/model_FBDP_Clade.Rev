@@ -1,0 +1,127 @@
+####################
+# Create the rates #
+####################
+
+# The FBD is conditioned on a starting time for the process, which is the origin time #
+# Specify a uniform prior on the origin #
+origin_time ~ dnUnif(145.0, 190.0)
+
+# Specify a sliding-window move on the origin_time parameter #
+# This move will be applied with 3 different window widths (delta) to help improve mixing #
+moves.append( mvSlide(origin_time, delta=0.01, weight=5.0) )
+moves.append( mvSlide(origin_time, delta=0.1,  weight=5.0) )
+moves.append( mvSlide(origin_time, delta=1,    weight=5.0) )
+
+
+
+### Specify a prior on the speciation and extinction rates
+rate_mean <- (NUM_TOTAL_SPECIES-2) / origin_time
+
+### Create a lognormal distributed variable for the mean speciation rate
+speciation_mean ~ dnLoguniform( 1E-6, 1E2)
+speciation_mean.setValue( rate_mean )
+moves.append( mvScale(speciation_mean, lambda=1, tune=true, weight=2.0) )
+
+speciation_sd ~ dnExponential( 1.0 / H )
+moves.append( mvScale(speciation_sd, lambda=1, tune=true, weight=2.0) )
+
+### Create a deterministic variable for the speciation rate categories
+### using a discretized lognormal distribution (the N-quantiles of it)
+speciation := fnDiscretizeDistribution( dnLognormal(ln(speciation_mean), speciation_sd), NUM_RATE_CATEGORIES )
+
+### Create a lognormal distributed variable for the mean extinction rate
+extinction_mean ~ dnLoguniform( 1E-6, 1E2)
+extinction_mean.setValue( rate_mean / 2.0 )
+moves.append( mvScale(extinction_mean, lambda=1, tune=true, weight=2.0) )
+
+### Create a deterministic variable for the speciation rate categories
+### Assume that all extinction rates are equal
+extinction := rep(extinction_mean, NUM_RATE_CATEGORIES)
+
+
+
+### Create a lognormal distributed variable for the mean fossilization rate
+fossilization_mean ~ dnLoguniform( 1E-6, 1E2)
+fossilization_mean.setValue( rate_mean / 2.0 )
+moves.append( mvScale(fossilization_mean, lambda=1, tune=true, weight=2.0) )
+
+### Create a deterministic variable for the speciation rate categories
+### Assume that all fossilization rates are equal
+fossilization := rep(fossilization_mean, NUM_RATE_CATEGORIES)
+
+### Create a exponential distributed variable for the rate of rate-shift events
+event_rate ~ dnUniform(0.0, 100.0/origin_time)
+moves.append( mvScale(event_rate, lambda=1, tune=true, weight=2.0) )
+
+
+### Create a uniformly distributed variable for the category at the root
+rate_cat_probs <- simplex( rep(1, NUM_RATE_CATEGORIES) )
+
+
+### rho is the probability of sampling species at the present
+### fix this to 367/367, since there are ~367 described species of primates
+### and we have sampled 367
+rho <- taxa.size() / NUM_TOTAL_SPECIES
+
+
+
+#### construct a variable for the tree drawn from a birth death process
+fbd_tree ~ dnCDBDP( rootAge           = origin_time,
+                    speciationRates   = speciation,
+                    extinctionRates   = extinction,
+                    psi               = fossilization,
+                    Q                 = fnJC(NUM_RATE_CATEGORIES),
+                    delta             = event_rate,
+                    pi                = rate_cat_probs,
+                    rho               = rho,
+                    condition         = "time" )
+
+
+#fbd_tree
+#observed_phylogeny <- readTrees("../data/termites.tre")[1]
+
+### clamp the model with the "observed" tree
+# The will be a random variable of a constrained topology distribution that is governed by the FBD #
+# this distribution will generate FBD trees that match the monophyly constraints defined above #
+clade_cryptotermes = clade("Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_glaesarius",
+                      "Cryptotermes_yamini")
+constraints = v(clade_cryptotermes)
+constraints
+#fbd_tree ~ dnConstrainedTopology(fbd_dist, constraints=constraints)
+s_t <- simStartingTree(taxa, constraints)
+fbd_tree.clamp(s_t)
+
+
+
+moves.append(mvFNPR(fbd_tree, weight=15.0))
+
+moves.append(mvCollapseExpandFossilBranch(fbd_tree, origin_time, weight=6.0))
+
+moves.append(mvNodeTimeSlideUniform(fbd_tree, weight=40.0))
+
+moves.append(mvRootTimeSlideUniform(fbd_tree, origin_time, weight=5.0))
+
+ # Setup the fossil tip sampling #
+
+ # Use a for loop to create a uniform distribution on the occurence time for each fossil #
+
+ # The boundaries of the uniform distribution are specified in the tsv file #
+
+ fossils = fbd_tree.getFossils()
+ for(i in 1:fossils.size())
+ {
+     fossils
+     t[i] := tmrca(fbd_tree, clade(fossils[i]))
+
+     a_i = fossils[i].getMinAge()
+     b_i = fossils[i].getMaxAge()
+
+     F[i] ~ dnUniform(t[i] - b_i, t[i] - a_i)
+     F[i].clamp( 0 )
+ }
+
+ # Add a move to sample the fossil times #
+moves.append( mvFossilTimeSlideUniform(fbd_tree, origin_time, weight=5.0) )
+
+
+num_samp_anc := fbd_tree.numSampledAncestors()
