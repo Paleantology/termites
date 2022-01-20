@@ -83,8 +83,7 @@ fbd_tree ~ dnCDBDP( rootAge           = origin_time,
 ### clamp the model with the "observed" tree
 # The will be a random variable of a constrained topology distribution that is governed by the FBD #
 # this distribution will generate FBD trees that match the monophyly constraints defined above #
-clade_cryptotermes = clade("Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_glaesarius",
-                      "Cryptotermes_yamini")
+clade_cryptotermes = clade("Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_glaesarius","Cryptotermes_ryshkoffi", "Cryptotermes_yamini")
 constraints = v(clade_cryptotermes)
 constraints
 #fbd_tree ~ dnConstrainedTopology(fbd_dist, constraints=constraints)

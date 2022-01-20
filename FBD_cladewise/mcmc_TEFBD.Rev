@@ -45,7 +45,7 @@ monitors = VectorMonitors()
 
 # Load the model files
 #source("scripts/FBD.Rev") # FBD tree prior
-source("model_FBDP_clade.Rev")
+source("model_FBDP_Clade.Rev")
 #source("scripts/model_UExp.Rev") # UExp relaxed clock
 
 #source("scripts/model_GTRG.Rev") # Molecular substitution model (GTR+G)
