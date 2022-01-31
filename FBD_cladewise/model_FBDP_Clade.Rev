@@ -15,23 +15,28 @@ moves.append( mvSlide(origin_time, delta=1,    weight=5.0) )
 
 
 ### Specify a prior on the speciation and extinction rates
-rate_mean <- (NUM_TOTAL_SPECIES-2) / origin_time
-
+# rate_mean <- (NUM_TOTAL_SPECIES-2) / origin_time
+#rate_mean
 ### Create a lognormal distributed variable for the mean speciation rate
-speciation_mean ~ dnLoguniform( 1E-6, 1E2)
-speciation_mean.setValue( rate_mean )
-moves.append( mvScale(speciation_mean, lambda=1, tune=true, weight=2.0) )
+#speciation_mean ~ dnLoguniform( 1E-6, 1E2)
+speciation_mean ~ dnExponential(10)
 
+#speciation_mean.setValue( rate_mean )
+moves.append( mvScale(speciation_mean, lambda=1, tune=true, weight=2.0) )
+H
 speciation_sd ~ dnExponential( 1.0 / H )
 moves.append( mvScale(speciation_sd, lambda=1, tune=true, weight=2.0) )
 
 ### Create a deterministic variable for the speciation rate categories
 ### using a discretized lognormal distribution (the N-quantiles of it)
-speciation := fnDiscretizeDistribution( dnLognormal(ln(speciation_mean), speciation_sd), NUM_RATE_CATEGORIES )
+ speciation := fnDiscretizeDistribution( dnLognormal(ln(speciation_mean), speciation_sd), NUM_RATE_CATEGORIES )
+#speciation := rep(n = 9, x = speciation_mean)
 
+speciation
 ### Create a lognormal distributed variable for the mean extinction rate
-extinction_mean ~ dnLoguniform( 1E-6, 1E2)
-extinction_mean.setValue( rate_mean / 2.0 )
+#extinction_mean ~ dnLoguniform( 1E-6, 1E2)
+extinction_mean ~ dnExponential(10)
+#extinction_mean.setValue( rate_mean / 2.0 )
 moves.append( mvScale(extinction_mean, lambda=1, tune=true, weight=2.0) )
 
 ### Create a deterministic variable for the speciation rate categories
@@ -41,8 +46,9 @@ extinction := rep(extinction_mean, NUM_RATE_CATEGORIES)
 
 
 ### Create a lognormal distributed variable for the mean fossilization rate
-fossilization_mean ~ dnLoguniform( 1E-6, 1E2)
-fossilization_mean.setValue( rate_mean / 2.0 )
+# fossilization_mean ~ dnLoguniform( 1E-6, 1E2)
+fossilization_mean ~ dnExponential(10)
+#fossilization_mean.setValue( rate_mean / 2.0 )
 moves.append( mvScale(fossilization_mean, lambda=1, tune=true, weight=2.0) )
 
 ### Create a deterministic variable for the speciation rate categories
@@ -85,8 +91,8 @@ fbd_tree ~ dnCDBDP( rootAge           = origin_time,
 # this distribution will generate FBD trees that match the monophyly constraints defined above #
 clade_cryptotermes = clade("Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_glaesarius",
                       "Cryptotermes_yamini")
+fbd_tree
 constraints = v(clade_cryptotermes)
-constraints
 #fbd_tree ~ dnConstrainedTopology(fbd_dist, constraints=constraints)
 s_t <- simStartingTree(taxa, constraints)
 fbd_tree.clamp(s_t)
@@ -110,7 +116,6 @@ moves.append(mvRootTimeSlideUniform(fbd_tree, origin_time, weight=5.0))
  fossils = fbd_tree.getFossils()
  for(i in 1:fossils.size())
  {
-     fossils
      t[i] := tmrca(fbd_tree, clade(fossils[i]))
 
      a_i = fossils[i].getMinAge()
