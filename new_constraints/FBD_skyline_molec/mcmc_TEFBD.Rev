@@ -1,0 +1,75 @@
+################################################################################
+#
+# RevBayes Example: Total-evidence dating under the fossilized birth-death model
+#
+# This file: Runs the full MCMC ...
+#
+# authors: Tracy A. Heath, Walker C. Pett, April M. Wright
+#
+################################################################################
+
+#######################
+# Reading in the Data #
+#######################
+# Create the full list of taxa (including all fossils and extant species #
+taxa <- readTaxonData("data/taxa.tsv")
+
+
+# Import the molecular sequences #
+# this file contains only the taxa for which sequence data are available #
+filenames <- v("parts/mtDNA_COI_12S-out.nex","parts/mtDNA_COI_16S-out.nex","parts/mtDNA_COI_Ala-out.nex","parts/mtDNA_COI_Arg-out.nex","parts/mtDNA_COI_Asn-out.nex","parts/mtDNA_COI_Asp-out.nex","parts/mtDNA_COI_Cys-out.nex","parts/mtDNA_COI_Gln-out.nex","parts/mtDNA_COI_Glu-out.nex","parts/mtDNA_COI_Gly-out.nex","parts/mtDNA_COI_His-out.nex","parts/mtDNA_COI_Ile-out.nex","parts/mtDNA_COI_Leu-out.nex","parts/mtDNA_COI_Leu_2-out.nex","parts/mtDNA_COI_Lys-out.nex","parts/mtDNA_COI_Met-out.nex","parts/mtDNA_COI_Phe-out.nex","parts/mtDNA_COI_Pro-out.nex","parts/mtDNA_COI_Ser-out.nex","parts/mtDNA_COI_Ser_2-out.nex","parts/mtDNA_COI_Thr-out.nex","parts/mtDNA_COI_Trp-out.nex","parts/mtDNA_COI_Tyr-out.nex","parts/mtDNA_COI_Val-out.nex","parts/mtDNA_COI_atp6_1-out.nex","parts/mtDNA_COI_atp6_2-out.nex","parts/mtDNA_COI_atp6_3-out.nex","parts/mtDNA_COI_atp8_1-out.nex","parts/mtDNA_COI_atp8_2-out.nex","parts/mtDNA_COI_atp8_3-out.nex","parts/mtDNA_COI_cob_1-out.nex","parts/mtDNA_COI_cob_2-out.nex","parts/mtDNA_COI_cob_3-out.nex","parts/mtDNA_COI_cox1_1-out.nex","parts/mtDNA_COI_cox1_2-out.nex","parts/mtDNA_COI_cox1_3-out.nex","parts/mtDNA_COI_cox2_1-out.nex","parts/mtDNA_COI_cox2_2-out.nex","parts/mtDNA_COI_cox2_3-out.nex","parts/mtDNA_COI_cox3_1-out.nex","parts/mtDNA_COI_cox3_2-out.nex","parts/mtDNA_COI_cox3_3-out.nex","parts/mtDNA_COI_nad1_1-out.nex","parts/mtDNA_COI_nad1_2-out.nex","parts/mtDNA_COI_nad1_3-out.nex","parts/mtDNA_COI_nad2_1-out.nex","parts/mtDNA_COI_nad2_2-out.nex","parts/mtDNA_COI_nad2_3-out.nex","parts/mtDNA_COI_nad3_1-out.nex","parts/mtDNA_COI_nad3_2-out.nex","parts/mtDNA_COI_nad3_3-out.nex","parts/mtDNA_COI_nad4_1-out.nex","parts/mtDNA_COI_nad4_2-out.nex","parts/mtDNA_COI_nad4_3-out.nex","parts/mtDNA_COI_nad4l_1-out.nex","parts/mtDNA_COI_nad4l_2-out.nex","parts/mtDNA_COI_nad4l_3-out.nex","parts/mtDNA_COI_nad5_1-out.nex","parts/mtDNA_COI_nad5_2-out.nex","parts/mtDNA_COI_nad5_3-out.nex","parts/mtDNA_COI_nad6_1-out.nex","parts/mtDNA_COI_nad6_2-out.nex","parts/mtDNA_COI_nad6_3-out.nex")
+n_data_subsets <- filenames.size()
+for (i in 1:n_data_subsets) {
+data[i] <- readDiscreteCharacterData(filenames[i])
+data[i].addMissingTaxa( taxa )
+
+}
+
+
+# Global parameters for our analysis
+
+n_taxa <- taxa.size()
+num_branches <- 2 * n_taxa - 3
+n_branches <- 2 * n_taxa - 2
+numTips <- n_taxa
+
+# Import the morphological character matrix #
+# this file contains only the taxa for which morphological characters are available #
+#morpho <- readDiscreteCharacterData("../data/morphology.nex")
+
+#morpho.addMissingTaxa( taxa )
+
+
+## helpers
+moves = VectorMoves()
+monitors = VectorMonitors()
+
+# Load the model files
+source("model_FBDP_skyline.Rev") # FBD tree prior
+source("model_UExp.Rev") # UExp relaxed clock
+
+source("model_GTRG.Rev") # Molecular substitution model (GTR+G)
+
+
+
+########
+# MCMC #
+########
+
+# initialize the model object #
+mymodel = model(fbd_tree)
+# Create a vector of monitors #
+# 1. for the full model #
+monitors.append(mnModel(filename="output/sky_mol.log", printgen=10))
+# 2. the tree #
+monitors.append(mnFile(filename="output/sky_mol.trees", printgen=10, fbd_tree))
+# 3. and a few select parameters to be printed to the screen #
+monitors.append(mnScreen(printgen=10))
+# Initialize the MCMC object #
+mymcmc = mcmc(mymodel, monitors, moves)
+
+# Run the MCMC #
+mymcmc.run(generations=50000)
+
+# Quit RevBayes #
+q()

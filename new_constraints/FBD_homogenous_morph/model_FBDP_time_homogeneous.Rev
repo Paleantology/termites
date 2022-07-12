@@ -1,0 +1,108 @@
+##########################################################################################
+# Joint Fossilized Birth-Death Process prior on the topology and fossil occurrence times #
+##########################################################################################
+
+
+# Define exponential priors on the birth rate and death rate #
+speciation_rate ~ dnExponential(10)
+extinction_rate ~ dnExponential(10)
+
+# Specify a scale move on the speciation_rate parameter #
+# This move will be applied with 3 different tuning values (lambda) to help improve mixing #
+moves.append( mvScale(speciation_rate, lambda=0.01, weight=1) )
+moves.append( mvScale(speciation_rate, lambda=0.1,  weight=1) )
+moves.append( mvScale(speciation_rate, lambda=1.0,  weight=1) )
+
+# Specify a sliding-window move on the extinction_rate parameter #
+# This move will be applied with 3 different window widths (delta) to help improve mixing #
+moves.append( mvScale(extinction_rate, lambda=0.01, weight=1) )
+moves.append( mvScale(extinction_rate, lambda=0.1,  weight=1) )
+moves.append( mvScale(extinction_rate, lambda=1,    weight=1) )
+
+# Create deterministic nodes for the diversification and turnover rates so that they can be monitored #
+diversification := speciation_rate - extinction_rate
+turnover := extinction_rate/speciation_rate
+
+# Fix the probability of sampling parameter (rho) to 1, #
+# because all extant bears are represented in this analysis #
+rho <- 0.1
+
+# Assume an exponential prior on the rate of sampling fossils (psi) #
+psi ~ dnExponential(10)
+
+# Specify a scale move on the psi parameter #
+# This move will be applied with 3 different tuning values (lambda) to help improve mixing #
+moves.append( mvScale(psi, lambda=0.01, weight=1) )
+moves.append( mvScale(psi, lambda=0.1,  weight=1) )
+moves.append( mvScale(psi, lambda=1,    weight=1) )
+
+# The FBD is conditioned on a starting time for the process, which is the origin time #
+# Specify a uniform prior on the origin #
+origin_time ~ dnUnif(125.0, 190.0)
+
+# Specify a sliding-window move on the origin_time parameter #
+# This move will be applied with 3 different window widths (delta) to help improve mixing #
+moves.append( mvSlide(origin_time, delta=0.01, weight=5.0) )
+moves.append( mvSlide(origin_time, delta=0.1,  weight=5.0) )
+moves.append( mvSlide(origin_time, delta=1,    weight=5.0) )
+
+
+### Define the tree-prior distribution as the fossilized birth-death process ###
+fbd_dist = dnFBDP(origin=origin_time, lambda=speciation_rate, mu=extinction_rate, psi=psi, rho=rho, taxa=taxa)
+fbd_dist
+# The will be a random variable of a constrained topology distribution that is governed by the FBD #
+# this distribution will generate FBD trees that match the monophyly constraints defined above #
+#Apicotermitinae = clade("Acholotermes_chirotus", "Acidnotermes_praus", "Aderitotermes_cf._fossor_BDIT074", "Alyscotermes_kilimandjaricus", "Amalotermes_phaeocephalus", "Amplucrutermes_inflatus", "Anenteotermes_cf._polyscolus_BDIT101", "Anoplotermes_banksi", "Anoplotermes_janus", "Anoplotermes_jheringi", "Anoplotermes_nigripunctatus", "Anoplotermes_parvus", "Anoplotermes_pseudobanksi", "Aparatermes_abbreviatus", "Aparatermes_cingulatus", "Apicotermitinae_gen._A_sp._TB-2017", "Astalotermes_murcus", "Astalotermes_quietus", "Astratotermes_sp.", "Ateuchotermes_retifaciens", "Compositermes_vindai", "Disjunctitermes_insularis", "Duplidentitermes_sp._TB-2014", "Euhamitermes_hamatus", "Grigiotermes_hageni", "Humutermes_krishnai", "Hydrecotermes_kawaii", "Jugositermes_tuberculatus", "Longustitermes_manni", "Patawatermes_nigripunctatus", "Patawatermes_turricola", "Rubeotermes_jheringi", "Ruptitermes_arboreus", "Tetimatermes_sp.", "Trichotermes_ducis", "Anoplotermes_bohio", "Anoplotermes_cacique", "Anoplotermes_carib", "Anoplotermes_maboya", "Anoplotermes_naboria", "Anoplotermes_nitaino", "Anoplotermes_quisqueya", "Anoplotermes_taino")
+#Archotermopsinae = clade("Archotermopsis_wroughtoni", "Hodotermopsis_iwatensis", "Parotermes_insignis", "Zootermopsis_coloradensis")
+#Archeorhinotermes = clade("Archeorhinotermes_rossi", "Archotermopsis_tornquisti")
+#Cratomastotermidae = clade("Cratomastotermes_wolfschwenningeri")
+#Hodoterminae = clade("Hodotermes_mossambicus", "Hodotermopsis_sjostedti")
+Kaloterminae = clade("Cryptotermes_glaesarius", "Cryptotermes_ryshkoffi", "Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_yamini", "Electrotermes_affinis", "Glyptotermes_grimaldii", "Glyptotermes_paleoliberatus", "Incisitermes_schwarzi", "Kalotermes_flavicollis", "Neotermes_grassei", "Oligokalotermes_fischeri", "Otagotermes_novazealandicus", "Proelectrotermes_berendtii", "Proelectrotermes_fodinae", "Proelectrotermes_holmgreni", "Proelectrotermes_roseni", "Proelectrotermes_swinhoei")
+#Macroterminae = clade("Acanthotermes_acanthothorax", "Allodontermes_schultzei", "Allodontermes_tenax", "Ancistrotermes_cavithorax", "Ancistrotermes_crucifer", "Ancistrotermes_pakistanicus", "Hypotermes_makhamensis", "Hypotermes_xenotermitis", "Macrotermes_acrocephalus", "Macrotermes_ahmadi", "Macrotermes_annandalei", "Macrotermes_barneyi", "Macrotermes_bellicosus", "Macrotermes_carbonarius", "Macrotermes_chebalingensis", "Macrotermes_choui", "Macrotermes_declivatus", "Macrotermes_falciger",
+#"Macrotermes_gilvus", "Macrotermes_guangxiensis", "Macrotermes_hainanensis", "Macrotermes_herus", "Macrotermes_incisus", "Macrotermes_jeanneli", "Macrotermes_jinghongensis", "Macrotermes_lilljeborgi", "Macrotermes_longimentis", "Macrotermes_luokengensis", "Macrotermes_malaccensis", "Macrotermes_meidoensis", "Macrotermes_menglongensis", "Macrotermes_michaelseni", "Macrotermes_muelleri", "Macrotermes_natalensis", "Macrotermes_nobilis", "Macrotermes_orthognathus", "Macrotermes_subhyalinus", "Macrotermes_trimorphus", "Macrotermes_vitrialatus", "Macrotermes_yunnanensis", "Macrotermes_zhejiangensis", "Macrotermes_zhui", "Odontotermes_badius", "Protermes_minutus", "Protermes_prorepens", "Pseudacanthotermes_militaris", "Pseudacanthotermes_spiniger", "Sphaerotermes_sphaerothorax", "Synacanthotermes_heterodon", "Synacanthotermes_zanzibarensis", "Macrotermes_pristinus", "Macrotermes_scheuthlei")
+Mastoterminae = clade("Mastotermes_darwiniensis", "Mastotermes_electrodominicus", "Mastotermes_electromexicus",  "Miotermes_procerus", "Miotermes_randeckensis", "Miotermes_spectabilis")
+Nasutitermes = clade( "Hospitalitermes_sp","Nasutitermes_electronasutus", "Nasutitermes_proatripennis", "Nasutitermes_sp", "Nasutitermes_sp_fossil", "Leucopitermes_leucops", "Longipeditermes_longipes",  "Obtusitermes_sp", "Oriensubulitermes_inanis","Postsubulitermes_sp",  "Subulitermes_fossil", "Subulitermes_baileyi", "Trinervitermes_sp", "Tumulitermes_apiocephalus", "Velocitermes_sp", "Atlantitermes_oculatissimus", "Caribitermes_hispaniola", "Constrictotermes_electroconstrictus", "Constrictotermes_sp")
+Rhinoterminae = clade("Coptotermes_curvignathus", "Coptotermes_priscus", "Heterotermes_platycephalus", "Parrhinotermes_microdentiformis", "Prorhinotermes_flavus", "Reticulitermes_flavipes", "Reticulitermes_antiquus", "Rhinotermes_sp", "Schedorhinotermes_breinli", "Schedorhinotermes_lamanianus",  "Schedorhinotermes_sp","Termitogeton_umblicautus", "Coptotermes_hirsutus", "Dolichorhinotermes_apopnus", "Dolichorhinotermes_longilabius", "Heterotermes_platycephalus", "Reticulitermes_antiquus",   "Rhinotermes_sp")
+Stylotermide = clade("Chilgatermes_diamatensis", "Stolotermes_amanoi", "Stolotermes_kupe", "Parastylotermes_calico", "Parastylotermes_frazieri", "Parastylotermes_krishnai", "Parastylotermes_robustus", "Parastylotermes_washingtonensis", "Prostylotermes_kamboja")
+Synterminae = clade("Cyrilliotermes_angulariceps", "Paracurvitermes_manni", "Procornitermes_sp", "Syntermes_sp")
+Termitinae = clade("Apilitermes_longiceps", "Basidentitermes_sp", "Cavitermes_sp", "Cephalotermes_rectangularis", "Coatitermes_kartaboensis", "Crenetermes_albotarsalis","Cubitermes_sp", "Cylindrotermes_parvignathus", "Dihoplotermes_sp", "Drepanotermes_rubriceps", "Ephelotermes_argutus", "Foraminitermes_tubifrons", "Globitermes_globosus", "Globitermes_globosus", "Homallotermes_eleanorae", "Macrognathotermes_sunteri", "Microcerotermes_sp_fossil", "Microcerotermes_sp_living", "Microhodotermes_viator", "Microtermes_sp", "Mirocapritermes_latignathus", "Microcerotermes_sp_living", "Microcerotermes_sp_fossil", "Neocapritermes_longinotus",  "Orientotermes_sp", "Orthotermes_sp", "Pericapritermes_sp", "Planicapritermes_sp", "Procapritermes_sp", "Procubitermes_arboricola", "Promirotermes_connectens", "spinitermes_sp", "Termes_sp", "Tuberculitermes_bycanistes",  "Microcerotermes_sp_fossil", "Microcerotermes_sp_living", "Allodontermes_sp", "Ancistrotermes_crucifer", "Hypotermes_obscuriceps", "Macrotermes_sp", "Odontotermes_sp", "Protermes_minutus", "Pseudacanthotermes_sp", "Sphaerotermes_sp", "Synacanthotermes_heterodon")
+Termopsidae = clade("Termopsis_bremii", "Termopsis_gracilipennis", "Termopsis_mallaszi", "Termopsis_transsylvanica", "Termopsis_ukapirmasi")
+outgroup = clade("Blattella_germanica", "Cryptocercus_relictus", "Eupolyphaga_sinensis", "Locusta_migratoria", "Megacrania_alpheus", "Periplaneta_fuliginosa", "Sclerophasma_paresisensis", "Tamolanica_tamolana")
+
+constraints = v(Kaloterminae,  Mastoterminae, Nasutitermes, Rhinoterminae, Stylotermide, Synterminae, Termitinae, Termopsidae, outgroup)
+# Archeorhinotermes, Cratomastotermidae, Hodoterminae, Macroterminae,Apicotermitinae, Archotermopsinae,
+fbd_tree ~ dnConstrainedTopology(fbd_dist, constraints=constraints)
+fbd_tree
+# Specify moves on the tree and node times #
+# These moves update the tree topology
+moves.append( mvFNPR(fbd_tree, weight=15.0) )
+moves.append( mvCollapseExpandFossilBranch(fbd_tree, origin_time, weight=6.0) )
+
+# These moves update the node ages #
+# Because we are conditioning on the origin time, we must also sample the root node age #
+moves.append( mvNodeTimeSlideUniform(fbd_tree, weight=40.0) )
+moves.append( mvRootTimeSlideUniform(fbd_tree, origin_time, weight=5.0) )
+
+
+### Use stratigraphic range data to explicitly sample the fossil occurence times ###
+# Use a for loop to create a uniform distribution on the occurence time for each fossil #
+# The boundaries of the uniform distribution are specified in the tsv file #
+fossils = fbd_tree.getFossils()
+for(i in 1:fossils.size())
+{
+    t[i] := tmrca(fbd_tree, clade(fossils[i]))
+
+    a_i = fossils[i].getMinAge()
+    b_i = fossils[i].getMaxAge()
+
+    F[i] ~ dnUniform(t[i] - b_i, t[i] - a_i)
+    F[i].clamp( 0 )
+}
+
+# Add a move to sample the fossil times #
+moves.append( mvFossilTimeSlideUniform(fbd_tree, origin_time, weight=5.0) )
+
+
+### Create deterministic nodes to monitor various tree statistics ###
+# Monitor the number of sampled ancestors in the FBD-tree #
+num_samp_anc := fbd_tree.numSampledAncestors();

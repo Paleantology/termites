@@ -1,0 +1,21 @@
+ls()
+list()
+ls
+readDiscreteCharacterData('*.nex'
+)
+readDiscreteCharacterData('*.nex')
+readDiscreteCharacterData("*.nex")
+q()
+filenames <- v("mtDNA_COI_12S-out.nex","mtDNA_COI_16S-out.nex","mtDNA_COI_Ala-out.nex","mtDNA_COI_Arg-out.nex","mtDNA_COI_Asn-out.nex","mtDNA_COI_Asp-out.nex","mtDNA_COI_Cys-out.nex","mtDNA_COI_Gln-out.nex","mtDNA_COI_Glu-out.nex","mtDNA_COI_Gly-out.nex","mtDNA_COI_His-out.nex","mtDNA_COI_Ile-out.nex","mtDNA_COI_Leu-out.nex","mtDNA_COI_Leu_2-out.nex","mtDNA_COI_Lys-out.nex","mtDNA_COI_Met-out.nex","mtDNA_COI_Phe-out.nex","mtDNA_COI_Pro-out.nex","mtDNA_COI_Ser-out.nex","mtDNA_COI_Ser_2-out.nex","mtDNA_COI_Thr-out.nex","mtDNA_COI_Trp-out.nex","mtDNA_COI_Tyr-out.nex","mtDNA_COI_Val-out.nex","mtDNA_COI_atp6_1-out.nex","mtDNA_COI_atp6_2-out.nex","mtDNA_COI_atp6_3-out.nex","mtDNA_COI_atp8_1-out.nex","mtDNA_COI_atp8_2-out.nex","mtDNA_COI_atp8_3-out.nex","mtDNA_COI_cob_1-out.nex","mtDNA_COI_cob_2-out.nex","mtDNA_COI_cob_3-out.nex","mtDNA_COI_cox1_1-out.nex","mtDNA_COI_cox1_2-out.nex","mtDNA_COI_cox1_3-out.nex","mtDNA_COI_cox2_1-out.nex","mtDNA_COI_cox2_2-out.nex","mtDNA_COI_cox2_3-out.nex","mtDNA_COI_cox3_1-out.nex","mtDNA_COI_cox3_2-out.nex","mtDNA_COI_cox3_3-out.nex","mtDNA_COI_nad1_1-out.nex","mtDNA_COI_nad1_2-out.nex","mtDNA_COI_nad1_3-out.nex","mtDNA_COI_nad2_1-out.nex","mtDNA_COI_nad2_2-out.nex","mtDNA_COI_nad2_3-out.nex","mtDNA_COI_nad3_1-out.nex","mtDNA_COI_nad3_2-out.nex","mtDNA_COI_nad3_3-out.nex","mtDNA_COI_nad4_1-out.nex","mtDNA_COI_nad4_2-out.nex","mtDNA_COI_nad4_3-out.nex","mtDNA_COI_nad4l_1-out.nex","mtDNA_COI_nad4l_2-out.nex","mtDNA_COI_nad4l_3-out.nex","mtDNA_COI_nad5_1-out.nex","mtDNA_COI_nad5_2-out.nex","mtDNA_COI_nad5_3-out.nex","mtDNA_COI_nad6_1-out.nex","mtDNA_COI_nad6_2-out.nex","mtDNA_COI_nad6_3-out.nex")
+n_data_subsets <- filenames.size()
+for (i in 1:n_data_subsets) {
+   data[i] = readDiscreteCharacterData(filenames[i])
+}
+data_subsets[1]
+data[1]
+data[1].taxa()
+taxa <- data[1].taxa()
+for (i in 1:n_data_subsets) {
+    data[i].addMissingTaxa( taxa )
+}
+q()

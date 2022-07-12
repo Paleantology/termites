@@ -1,0 +1,68 @@
+################################################################################
+#
+# RevBayes Example: Total-evidence dating under the fossilized birth-death model
+#
+# This file: Runs the full MCMC ...
+#
+# authors: Tracy A. Heath, Walker C. Pett, April M. Wright
+#
+################################################################################
+
+#######################
+# Reading in the Data #
+#######################
+# Create the full list of taxa (including all fossils and extant species #
+taxa <- readTaxonData("data/taxa.tsv")
+
+
+# Import the molecular sequences #
+# this file contains only the taxa for which sequence data are available #
+morpho <- readDiscreteCharacterData("data/morphology.nex")
+
+morpho.addMissingTaxa( taxa )
+
+# Global parameters for our analysis
+
+n_taxa <- taxa.size()
+num_branches <- 2 * n_taxa - 3
+n_branches <- 2 * n_taxa - 2
+numTips <- n_taxa
+
+# Import the morphological character matrix #
+# this file contains only the taxa for which morphological characters are available #
+#morpho <- readDiscreteCharacterData("../data/morphology.nex")
+
+#morpho.addMissingTaxa( taxa )
+
+
+## helpers
+moves = VectorMoves()
+monitors = VectorMonitors()
+
+# Load the model files
+source("model_FBDP_time_homogeneous.Rev") # FBD tree prior
+
+source("model_Morph.Rev") # Morphological character change model
+
+
+########
+# MCMC #
+########
+
+# initialize the model object #
+mymodel = model(fbd_tree)
+# Create a vector of monitors #
+# 1. for the full model #
+monitors.append(mnModel(filename="output/homo_morph.log", printgen=10))
+# 2. the tree #
+monitors.append(mnFile(filename="output/homo_morph.trees", printgen=10, fbd_tree))
+# 3. and a few select parameters to be printed to the screen #
+monitors.append(mnScreen(printgen=10))
+# Initialize the MCMC object #
+mymcmc = mcmc(mymodel, monitors, moves)
+
+# Run the MCMC #
+mymcmc.run(generations=50000)
+
+# Quit RevBayes #
+q()

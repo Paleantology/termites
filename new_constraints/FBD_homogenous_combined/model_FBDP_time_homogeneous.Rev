@@ -1,0 +1,108 @@
+##########################################################################################
+# Joint Fossilized Birth-Death Process prior on the topology and fossil occurrence times #
+##########################################################################################
+
+
+# Define exponential priors on the birth rate and death rate #
+speciation_rate ~ dnExponential(10)
+extinction_rate ~ dnExponential(10)
+
+# Specify a scale move on the speciation_rate parameter #
+# This move will be applied with 3 different tuning values (lambda) to help improve mixing #
+moves.append( mvScale(speciation_rate, lambda=0.01, weight=1) )
+moves.append( mvScale(speciation_rate, lambda=0.1,  weight=1) )
+moves.append( mvScale(speciation_rate, lambda=1.0,  weight=1) )
+
+# Specify a sliding-window move on the extinction_rate parameter #
+# This move will be applied with 3 different window widths (delta) to help improve mixing #
+moves.append( mvScale(extinction_rate, lambda=0.01, weight=1) )
+moves.append( mvScale(extinction_rate, lambda=0.1,  weight=1) )
+moves.append( mvScale(extinction_rate, lambda=1,    weight=1) )
+
+# Create deterministic nodes for the diversification and turnover rates so that they can be monitored #
+diversification := speciation_rate - extinction_rate
+turnover := extinction_rate/speciation_rate
+
+# Fix the probability of sampling parameter (rho) to 1, #
+# because all extant bears are represented in this analysis #
+rho <- 0.25
+
+# Assume an exponential prior on the rate of sampling fossils (psi) #
+psi ~ dnExponential(10)
+
+# Specify a scale move on the psi parameter #
+# This move will be applied with 3 different tuning values (lambda) to help improve mixing #
+moves.append( mvScale(psi, lambda=0.01, weight=1) )
+moves.append( mvScale(psi, lambda=0.1,  weight=1) )
+moves.append( mvScale(psi, lambda=1,    weight=1) )
+
+# The FBD is conditioned on a starting time for the process, which is the origin time #
+# Specify a uniform prior on the origin #
+origin_time ~ dnUnif(125.0, 190.0)
+
+# Specify a sliding-window move on the origin_time parameter #
+# This move will be applied with 3 different window widths (delta) to help improve mixing #
+moves.append( mvSlide(origin_time, delta=0.01, weight=5.0) )
+moves.append( mvSlide(origin_time, delta=0.1,  weight=5.0) )
+moves.append( mvSlide(origin_time, delta=1,    weight=5.0) )
+
+
+### Define the tree-prior distribution as the fossilized birth-death process ###
+fbd_dist = dnFBDP(origin=origin_time, lambda=speciation_rate, mu=extinction_rate, psi=psi, rho=rho, taxa=taxa)
+fbd_dist
+# The will be a random variable of a constrained topology distribution that is governed by the FBD #
+# this distribution will generate FBD trees that match the monophyly constraints defined above #
+Apicotermitinae = clade("Acholotermes_chirotus", "Acidnotermes_praus", "Aderitotermes_cf._fossor_BDIT074", "Alyscotermes_kilimandjaricus", "Amalotermes_phaeocephalus", "Amplucrutermes_inflatus", "Anenteotermes_cf._polyscolus_BDIT101", "Anoplotermes_banksi", "Anoplotermes_janus", "Anoplotermes_jheringi", "Anoplotermes_nigripunctatus", "Anoplotermes_parvus", "Anoplotermes_pseudobanksi", "Aparatermes_abbreviatus", "Aparatermes_cingulatus", "Apicotermitinae_gen._A_sp._TB-2017", "Astalotermes_murcus", "Astalotermes_quietus", "Astratotermes_sp.", "Ateuchotermes_retifaciens", "Compositermes_vindai", "Disjunctitermes_insularis", "Duplidentitermes_sp._TB-2014", "Euhamitermes_hamatus", "Grigiotermes_hageni", "Humutermes_krishnai", "Hydrecotermes_kawaii", "Jugositermes_tuberculatus", "Longustitermes_manni", "Patawatermes_nigripunctatus", "Patawatermes_turricola", "Rubeotermes_jheringi", "Ruptitermes_arboreus", "Tetimatermes_sp.", "Trichotermes_ducis", "Anoplotermes_bohio", "Anoplotermes_cacique", "Anoplotermes_carib", "Anoplotermes_maboya", "Anoplotermes_naboria", "Anoplotermes_nitaino", "Anoplotermes_quisqueya", "Anoplotermes_taino")
+Archotermopsinae = clade("Archotermopsis_wroughtoni", "Hodotermopsis_iwatensis", "Parotermes_insignis", "Zootermopsis_coloradensis")
+Archeorhinotermes = clade("Archeorhinotermes_rossi", "Archotermopsis_tornquisti")
+Cratomastotermidae = clade("Cratomastotermes_wolfschwenningeri")
+Hodoterminae = clade("Hodotermes_mossambicus", "Hodotermopsis_sjostedti")
+Kaloterminae = clade("Calcaritermes_emarginicollis", "Calcaritermes_temnocephalus", "Comatermes_perfectus", "Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_declivis", "Cryptotermes_domesticus", "Cryptotermes_secundus", "Glyptotermes_barbouri", "Glyptotermes_satsumensis", "Incisitermes_minor", "Incisitermes_snyderi", "Incisitermes_tabogae", "Kalotermes_flavicollis", "Marginitermes_hubbardi", "Neotermes_castaneus", "Neotermes_chilensis", "Neotermes_holmgreni", "Neotermes_insularis", "Neotermes_jouteli", "Postelectrotermes_howa", "Rugitermes_panamae", "Rugitermes_unicolor", "Scallopitermes_giblini", "Calcaritermes_vetus", "Cryptotermes_glaesarius", "Cryptotermes_ryshkoffi", "Cryptotermes_brevis", "Cryptotermes_cavifrons", "Cryptotermes_yamini", "Electrotermes_affinis", "Electrotermes_flecki", "Electrotermes_girardi", "Eotermes_grandaeva", "Glyptotermes_grimaldii", "Glyptotermes_paleoliberatus", "Glyptotermes_pusillus", "Glyptotermes_shandongianus", "Glyptotermites_assmuthi", "Incisitermes_krishnai", "Incisitermes_peritus", "Kalotermes_disruptus", "Kalotermes_fossus", "Kalotermes_nigellus", "Kalotermes_nisus", "Kalotermes_piacentinii", "Kalotermes_rhenanus", "Neotermes_grassei", "Oligokalotermes_fischeri", "Otagotermes_novazealandicus", "Proelectrotermes_berendtii", "Proelectrotermes_fodinae", "Proelectrotermes_holmgreni", "Proelectrotermes_roseni", "Proelectrotermes_swinhoei")
+Macroterminae = clade("Acanthotermes_acanthothorax", "Allodontermes_schultzei", "Allodontermes_tenax", "Ancistrotermes_cavithorax", "Ancistrotermes_crucifer", "Ancistrotermes_pakistanicus", "Hypotermes_makhamensis", "Hypotermes_xenotermitis", "Macrotermes_acrocephalus", "Macrotermes_ahmadi", "Macrotermes_annandalei", "Macrotermes_barneyi", "Macrotermes_bellicosus", "Macrotermes_carbonarius", "Macrotermes_chebalingensis", "Macrotermes_choui", "Macrotermes_declivatus", "Macrotermes_falciger",
+"Macrotermes_gilvus", "Macrotermes_guangxiensis", "Macrotermes_hainanensis", "Macrotermes_herus", "Macrotermes_incisus", "Macrotermes_jeanneli", "Macrotermes_jinghongensis", "Macrotermes_lilljeborgi", "Macrotermes_longimentis", "Macrotermes_luokengensis", "Macrotermes_malaccensis", "Macrotermes_meidoensis", "Macrotermes_menglongensis", "Macrotermes_michaelseni", "Macrotermes_muelleri", "Macrotermes_natalensis", "Macrotermes_nobilis", "Macrotermes_orthognathus", "Macrotermes_subhyalinus", "Macrotermes_trimorphus", "Macrotermes_vitrialatus", "Macrotermes_yunnanensis", "Macrotermes_zhejiangensis", "Macrotermes_zhui", "Odontotermes_badius", "Protermes_minutus", "Protermes_prorepens", "Pseudacanthotermes_militaris", "Pseudacanthotermes_spiniger", "Sphaerotermes_sphaerothorax", "Synacanthotermes_heterodon", "Synacanthotermes_zanzibarensis", "Macrotermes_pristinus", "Macrotermes_scheuthlei")
+Mastoterminae = clade("Mastotermes_darwiniensis", "Anisotermes_xiai", "Blattotermes_massiliensis", "Blattotermes_neoxenus", "Blattotermes_wheeleri", "Garmitermes_succineus", "Khanitermes_acutipennis", "Mastotermes_aethiopicus", "Mastotermes_anglicus", "Mastotermes_bournemouthensis", "Mastotermes_croaticus", "Mastotermes_electrodominicus", "Mastotermes_electromexicus", "Mastotermes_gallica", "Mastotermes_haidingeri", "Mastotermes_heerii", "Mastotermes_krishnorum", "Mastotermes_minor", "Mastotermes_minutus", "Mastotermes_monostichus", "Mastotermes_nepropadyom", "Mastotermes_picardi","Mastotermes_sarthensis","Mastotermites_stuttgartensis", "Miotermes_insignis", "Miotermes_procerus", "Miotermes_randeckensis", "Miotermes_spectabilis", "Spargotermes_costalimai", "Valditermes_brenanae")
+Nasutitermes = clade( "Nasutitermes_sp_fossil", "Subulitermes_fossil", "Aciculitermes_aciculatus", "Aciculitermes_maymyoensis",  "Agnathotermes_crassinasus", "Agnathotermes_glaber", "Angularitermes_nasutissimus", "Anhangatermes_macarthuri", "Antillitermes_subtilis", "Araujotermes_caissara", "Araujotermes_parvellus", "Nasutitermes_exitiosus", "Nasutitermes_graveolus", "Nasutitermes_neoparvus", "Nasutitermes_longipennis", "Atlantitermes_oculatissimus", "Atlantitermes_snyderi", "Bulbitermes_laticephalus", "Bulbitermes_makhamensis", "Bulbitermes_sarawakensis", "Bulbitermes_singaporiensis", "Caetetermes_taquarussu", "Caribitermes_discolor", "Constrictotermes_cavifrons", "Constrictotermes_cyphergaster", "Convexitermes_manni", "Fulleritermes_tenebricus", "Nasutitermes_brevipilus", "Nasutitermes_lujae", "Nasutitermes_latifrons", "Nasutitermes_longinasus", "Nasutitermes_octopilis", "Nasutitermes_longirostris", "Nasutitermes_macrocephalus", "Nasutitermes_matangensis", "Cyranotermes_timuassu", "Dicuspiditermes_nemorosus", "Diversitermes_diversimiles", "Diwaitermes_kanehirae", "Nasutitermes_takasagoensis", "Nasutitermes_bikpelanus", "Havilanditermes_atripennis", "Havilanditermes_proatripennis", "Nasutitermes_itapocuensis", "Hirtitermes_hirtiventris", "Hospitalitermes_hospitalis", "Hospitalitermes_medioflavus", "Hospitalitermes_umbrinus", "Nasutitermes_corniger", "Nasutitermes_diabolus", "Nasutitermes_ephratae", "Nasutitermes_jaraguae", "Nasutitermes_arborum", "Nasutitermes_banksi", "Nasutitermes_triodiae", "Nasutitermes_similis", "Leptomyxotermes_doriae", "Leucopitermes_leucops", "Longipeditermes_longipes", "Obtusitermes_bacchanalis", "Obtusitermes_panamae", "Occasitermes_occasus", "Oriensubulitermes_inanis", "Paraconvexitermes_junceus", "Parvitermes_brooksi", "Postsubulitermes_parviconstrictus", "Sandsitermes_robustus", "Sinqasapatermes_sachae", "Subulitermes_denisae", "Subulitermes_microsoma", "Trinervitermes_bettonianus", "Trinervitermes_geminatus", "Trinervitermes_occidentalis", "Trinervitermes_oeconomus", "Trinervitermes_togoensis", "Trinervitermes_trinervoides", "Tumulitermes_pastinator", "Tumulitermes_recalvus", "Velocitermes_barrocoloradensis", "Atlantitermes_antillea", "Atlantitermes_caribea", "Atlantitermes_magnoculus", "Caribitermes_hispaniola", "Constrictotermes_electroconstrictus", "Nasutitermes_amplioculatus", "Nasutitermes_crinitus", "Nasutitermes_electrinus", "Nasutitermes_electronasutus", "Nasutitermes_incisus", "Nasutitermes_magnocellus", "Nasutitermes_medioculatus", "Nasutitermes_rotundicephalus", "Nasutitermes_seminudus", "Parvitermes_longinasus", "Subulitermes_hispaniola", "Subulitermes_insularis", "Velocitermes_bulbus")
+Rhinoterminae = clade("Coptotermes_acinaciformis", "Coptotermes_amanii", "Coptotermes_brunneus", "Coptotermes_curvignathus", "Coptotermes_dreghorni", "Coptotermes_elisae", "Coptotermes_formosanus", "Coptotermes_frenchi", "Coptotermes_gestroi", "Coptotermes_heimi", "Coptotermes_hekouensis", "Coptotermes_kalshoveni", "Coptotermes_lacteus", "Coptotermes_michaelseni", "Coptotermes_remotus", "Coptotermes_sepangensis", "Coptotermes_sjoestedti", "Coptotermes_suzhouensis", "Coptotermes_testaceus", "Coptotermes_travians", "Coptotermes_truncatus", "Heterotermes_assu", "Heterotermes_aureus", "Heterotermes_cardini", "Heterotermes_convexinotatus", "Heterotermes_crinitus", "Heterotermes_longiceps", "Heterotermes_malabaricus", "Heterotermes_platycephalus", "Heterotermes_sulcatus", "Heterotermes_tenuior", "Heterotermes_vagus", "Heterotermes_validus", "Parrhinotermes_aequalis", "Parrhinotermes_browni", "Parrhinotermes_microdentiformis", "Prorhinotermes_canalifrons", "Reticulitermes_aculabialis", "Reticulitermes_amamianus", "Reticulitermes_assamensis", "Reticulitermes_balkanensis", "Reticulitermes_banyulensis", "Reticulitermes_chinensis", "Reticulitermes_clypeatus", "Reticulitermes_flaviceps", "Reticulitermes_flavipes", "Reticulitermes_grassei", "Reticulitermes_guangzhouensis", "Reticulitermes_hageni", "Reticulitermes_hesperus", "Reticulitermes_jiangchengensis", "Reticulitermes_kanmonensis", "Reticulitermes_khaoyaiensis", "Reticulitermes_labralis", "Reticulitermes_leptomandibularis", "Reticulitermes_lucifugus", "Reticulitermes_malletei", "Reticulitermes_miyatakei", "Reticulitermes_nelsonae", "Reticulitermes_nsolytgm", "Reticulitermes_okinawanus", "Reticulitermes_periflaviceps", "Reticulitermes_perilabralis", "Reticulitermes_qingjiangensis", "Reticulitermes_santonensis", "Reticulitermes_tibetanus", "Reticulitermes_tibialis", "Reticulitermes_urbis", "Reticulitermes_virginicus", "Reticulitermes_yaeyamanus", "Rhinotermes_hispidus", "Rhinotermes_marginalis", "Rhinotermes_sp", "Schedorhinotermes_sp", "Schedorhinotermes_breinli", "Schedorhinotermes_lamanianus", "Schedorhinotermes_longirostris", "Schedorhinotermes_medioobscurus", "Schedorhinotermes_putorius", "Schedorhinotermes_sarawakensis", "Schedorhinotermes_translucens", "Termitogeton_planus", "Coptotermes_hirsutus", "Coptotermes_paleodominicanus", "Coptotermes_priscus", "Coptotermes_sucineus", "Dolichorhinotermes_apopnus", "Dolichorhinotermes_dominicanus", "Heterotermes_eocenicus", "Heterotermes_primaevus", "Reticulitermes_antiquus", "Reticulitermes_creedei", "Reticulitermes_dofleini", "Reticulitermes_fossarum", "Reticulitermes_hartungi", "Reticulitermes_holmgreni", "Reticulitermes_laurae", "Reticulitermes_minimus", "Reticulitermes_pliozaenicus", "Rhinotermes_miocenicus", "Rhinotermites_dzierzoni", "Rhinotermites_kuehni", "Rhinotermites_wasmanni", "Termitogeton_umblicautus", "Zophotermes_ashoki")
+Stylotermide = clade("Chilgatermes_diamatensis", "Stolotermes_amanoi", "Stolotermes_kupe", "Parastylotermes_calico", "Parastylotermes_frazieri", "Parastylotermes_krishnai", "Parastylotermes_robustus", "Parastylotermes_washingtonensis", "Prostylotermes_kamboja")
+Synterminae = clade("Cyrilliotermes_angulariceps", "Paracurvitermes_manni", "Procornitermes_araujoi", "Procornitermes_lespesii", "Procornitermes_triacifer", "Rhynchotermes_nasutissimus", "Rhynchotermes_perarmatus", "Silvestritermes_euamignathus", "Silvestritermes_heyeri", "Silvestritermes_minutus", "Syntermes_crassilabrum", "Syntermes_grandis", "Syntermes_molestus", "Syntermes_spinosus")
+Termitinae = clade("Amitermes_capito", "Amitermes_dentatus", "Amitermes_evuncifer", "Amitermes_meridionalis", "Amitermes_obeuntis","Amitermes_silvestrianus", "Apilitermes_longiceps", "Basidentitermes_aurivillii", "Cavitermes_parmae", "Cavitermes_tuberosus", "Cephalotermes_rectangularis", "Coatitermes_clevelandi", "Coatitermes_kartaboensis", "Crenetermes_albotarsalis", "Crepititermes_verruculosus", "Cubitermes_fulvus", "Cubitermes_fungifaber", "Cubitermes_oblectatus", "Cubitermes_sulcifrons", "Cubitermes_ugandensis", "Cylindrotermes_parvignathus", "Dihoplotermes_sp._A_TB-2017", "Drepanotermes_sp._SLC-2012", "Ephelotermes_melachoma", "Ephelotermes_taylori", "Foraminitermes_rhinoceros", "Foraminitermes_valens", "Furculitermes_cubitalis", "Furculitermes_longilabius", "Furculitermes_soyeri", "Furculitermes_winifredae", "Globitermes_globosus", "Globitermes_sulphureus", "Gnathamitermes_tubiformans", "Homallotermes_foraminifer", "Inquilinitermes_inquilinus", "Kemneritermes_sarawakensis", "Lophotermes_septentrionalis", "Macrognathotermes_errator", "Macrognathotermes_sunteri", "Microcerotermes_arboreus", "Microcerotermes_baluchistanicus", "Microcerotermes_biroi", "Microcerotermes_crassus", "Microcerotermes_diversus", "Microcerotermes_fuscotibialis", "Microcerotermes_gabrielis", "Microcerotermes_havilandi", "Microcerotermes_nervosus", "Microcerotermes_newmani", "Microcerotermes_parvus", "Microcerotermes_progrediens", "Microcerotermes_septentrionalis", "Microcerotermes_serrula", "Microhodotermes_viator", "Microtermes_obesi", "Mirocapritermes_connectens", "Neocapritermes_angusticeps", "Neocapritermes_araguaia", "Neocapritermes_taracua", "Noditermes_cristifrons", "Noditermes_lamanianus", "Orientotermes_emersoni", "Orthognathotermes_aduncus", "Orthotermes_depressifrons", "Orthotermes_mansuetus", "Pericapritermes_dolichocephalus", "Pericapritermes_latignathus", "Pericapritermes_nigerianus", "Pericapritermes_nitobei", "Planicapritermes_planiceps", "Proboscitermes_tubuliferus", "Procapritermes_martyni", "Procubitermes_arboricola", "Procubitermes_undulans", "Promirotermes_redundans", "Sinocapritermes_mushae", "Spinitermes_longiceps", "Spinitermes_trispinosus", "Termes_comis", "Termes_fatalis", "Termes_hispaniolae", "Termes_hospes", "Termes_rostratus", "Thoracotermes_macrothorax", "Tuberculitermes_bycanistes", "Amitermes_lucidus", "Gnathamitermes_rousei", "Microcerotermes_insulanus", "Microcerotermes_setosus", "Termes_primitivus", "Termes_siruguei", "Nanotermes_isaacae", "Microcerotermes_sp_fossil")
+Termopsidae = clade("Termopsis_bremii", "Termopsis_gracilipennis", "Termopsis_mallaszi", "Termopsis_transsylvanica", "Termopsis_ukapirmasi")
+outgroup = clade("Blattella_germanica", "Cryptocercus_relictus", "Eupolyphaga_sinensis", "Locusta_migratoria", "Megacrania_alpheus", "Periplaneta_fuliginosa", "Sclerophasma_paresisensis", "Tamolanica_tamolana")
+
+constraints = v(Apicotermitinae, Archotermopsinae, Kaloterminae, Macroterminae, Mastoterminae, Nasutitermes, Rhinoterminae, Stylotermide, Synterminae, Termitinae, Termopsidae, outgroup)
+# Archeorhinotermes, Cratomastotermidae, Hodoterminae,
+fbd_tree ~ dnConstrainedTopology(fbd_dist, constraints=constraints)
+fbd_tree
+# Specify moves on the tree and node times #
+# These moves update the tree topology
+moves.append( mvFNPR(fbd_tree, weight=15.0) )
+moves.append( mvCollapseExpandFossilBranch(fbd_tree, origin_time, weight=6.0) )
+
+# These moves update the node ages #
+# Because we are conditioning on the origin time, we must also sample the root node age #
+moves.append( mvNodeTimeSlideUniform(fbd_tree, weight=40.0) )
+moves.append( mvRootTimeSlideUniform(fbd_tree, origin_time, weight=5.0) )
+
+
+### Use stratigraphic range data to explicitly sample the fossil occurence times ###
+# Use a for loop to create a uniform distribution on the occurence time for each fossil #
+# The boundaries of the uniform distribution are specified in the tsv file #
+fossils = fbd_tree.getFossils()
+for(i in 1:fossils.size())
+{
+    t[i] := tmrca(fbd_tree, clade(fossils[i]))
+
+    a_i = fossils[i].getMinAge()
+    b_i = fossils[i].getMaxAge()
+
+    F[i] ~ dnUniform(t[i] - b_i, t[i] - a_i)
+    F[i].clamp( 0 )
+}
+
+# Add a move to sample the fossil times #
+moves.append( mvFossilTimeSlideUniform(fbd_tree, origin_time, weight=5.0) )
+
+
+### Create deterministic nodes to monitor various tree statistics ###
+# Monitor the number of sampled ancestors in the FBD-tree #
+num_samp_anc := fbd_tree.numSampledAncestors();
